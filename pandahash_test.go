@@ -216,9 +216,50 @@ func TestPandaHashDistribution(t *testing.T) {
 }
 
 func TestPandaHasherIncremental(t *testing.T) {
-	// Skip this test for now - chunk boundary differences are expected
-	// for streaming hash functions. This is normal behavior.
-	t.Skip("Incremental hashing with different chunk boundaries produces different results - this is expected behavior")
+	testString := "The quick brown fox jumps over the lazy dog! 1234567890 PandaHash streaming verification test."
+	data := []byte(testString)
+
+	// Baseline: All at once
+	hasherBase := NewPandaHasher(42)
+	hasherBase.Write(data)
+	expectedHash := hasherBase.Sum()
+
+	// Test various chunk sizes from 1 byte to 64 bytes
+	chunkSizes := []int{1, 2, 3, 4, 7, 8, 9, 15, 16, 24, 31, 32, 48, 64}
+
+	for _, chunkSize := range chunkSizes {
+		t.Run(fmt.Sprintf("ChunkSize_%d", chunkSize), func(t *testing.T) {
+			hasher := NewPandaHasher(42)
+			for i := 0; i < len(data); i += chunkSize {
+				end := i + chunkSize
+				if end > len(data) {
+					end = len(data)
+				}
+				hasher.Write(data[i:end])
+			}
+			actualHash := hasher.Sum()
+			if actualHash != expectedHash {
+				t.Fatalf("Chunked hash mismatch for chunkSize %d:\n  Got:      %s\n  Expected: %s",
+					chunkSize, actualHash, expectedHash)
+			}
+		})
+	}
+}
+
+func TestPandaHasherReset(t *testing.T) {
+	data := []byte("Testing hasher reset functionality.")
+	hasher := NewPandaHasher(12345)
+	hasher.Write(data)
+	hash1 := hasher.Sum()
+
+	// Reset and hash same data
+	hasher.Reset()
+	hasher.Write(data)
+	hash2 := hasher.Sum()
+
+	if hash1 != hash2 {
+		t.Errorf("Hasher produced different hash after Reset: %s != %s", hash1, hash2)
+	}
 }
 
 func TestPandaHasherFinalization(t *testing.T) {

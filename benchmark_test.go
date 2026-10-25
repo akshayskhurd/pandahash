@@ -10,7 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cespare/xxhash/v2"
+	"github.com/dgryski/go-wyhash"
 	"github.com/spaolacci/murmur3"
+	"github.com/zeebo/xxh3"
 )
 
 // Test data sizes representing different use cases
@@ -119,6 +122,33 @@ func BenchmarkUnifiedHashComparison(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				_ = crc32Hash(testDataBytes)
+			}
+		})
+
+		// XXH3-64 - State of the art SIMD hash (Yann Collet / zeebo)
+		b.Run(fmt.Sprintf("XXH3_64_%s", size.name), func(b *testing.B) {
+			b.SetBytes(int64(size.size))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_ = xxh3.Hash(testDataBytes)
+			}
+		})
+
+		// xxHash-64 - Industry standard (Cespare v2.3.0)
+		b.Run(fmt.Sprintf("xxHash64_%s", size.name), func(b *testing.B) {
+			b.SetBytes(int64(size.size))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_ = xxhash.Sum64(testDataBytes)
+			}
+		})
+
+		// wyhash - Ultra-fast 64-bit hash (Wang Yi)
+		b.Run(fmt.Sprintf("wyhash_%s", size.name), func(b *testing.B) {
+			b.SetBytes(int64(size.size))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_ = wyhash.Hash(testDataBytes, 0)
 			}
 		})
 
