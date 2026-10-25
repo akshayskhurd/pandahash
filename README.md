@@ -33,6 +33,10 @@ Measured on Apple Silicon (M4, `go1.27.3 darwin/arm64`) using the official **Can
 
 ## 🏗️ Architecture & Processing Strategy
 
+<p align="center">
+  <img src="assets/architecture.png" alt="PandaHash System Architecture" width="100%">
+</p>
+
 PandaHash routes inputs through specialized vectorization pipelines depending on payload size:
 
 ```
